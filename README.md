@@ -216,7 +216,8 @@ To ensure reliable production operation, the system integrates a monitoring stac
 
 * Orchestrates FastAPI, Prometheus, and Grafana services together.
 
-![Prometheus Graph](assets/prometheus_graph.png)
+<img width="1911" height="908" alt="image" src="https://github.com/user-attachments/assets/2300ab95-daf9-466d-9be6-8f478fbb33e0" />
+
 
 Through this setup users can monitor:
 

@@ -33,7 +33,7 @@ Key goals of the project include:
 
 Below is a high-level overview of the forecasting pipeline.
 
-![Project Workflow](assets/workflow.png)
+<img width="4328" height="2894" alt="image" src="https://github.com/user-attachments/assets/0fa8cb53-b633-4505-90d9-11d00649e6bf" />
 
 ---
 

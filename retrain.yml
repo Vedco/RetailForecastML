@@ -1,0 +1,99 @@
+name: Auto Retrain Pipeline
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'   # Every Monday at 9AM UTC
+  push:
+    branches:
+      - main
+    #paths:
+     # - reports/drift_summary.json
+      # You can remove trigger_retrain.flag here since it's managed internally now
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install dvc[dagsHub]
+
+      - name: Configure DVC remote for DagsHub (secure)
+        run: |
+          dvc remote modify --local dagshub_remote url https://dagshub.com/${{ secrets.DAGSHUB_USER }}/mlops_1.dvc
+          dvc remote modify --local dagshub_remote auth basic
+          dvc remote modify --local dagshub_remote user ${{ secrets.DAGSHUB_USER }}
+          dvc remote modify --local dagshub_remote password ${{ secrets.DAGSHUB_TOKEN }}
+          dvc remote default dagshub_remote
+
+
+      - name: Pull latest data and models from DagsHub
+        run: dvc pull
+
+      - name: Run drift detection
+        id: drift_detection
+        run: |
+          python src/drift/drift_detection.py
+          # Your script should create a file like drift_result.txt with 'true' or 'false'
+          cat drift_result.txt
+          echo "drift=$(cat drift_result.txt)" >> $GITHUB_OUTPUT
+
+      - name: Run retraining
+        if: steps.drift_detection.outputs.drift == 'true'
+        run: python src/retraining/retrain_pipeline.py
+
+      - name: Track updated model with DVC
+        if: steps.drift_detection.outputs.drift == 'true'
+        run: |
+          dvc config core.autostage true
+          dvc add models/model.pkl
+          dvc push
+
+      - name: Commit new model metadata and push to GitHub
+        if: steps.drift_detection.outputs.drift == 'true'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github-actions[bot].github.com
+          git add models/model.pkl.dvc .gitignore models/metrics.json logs/retrain_logs.log .dvc/config
+          git commit -m "Auto retrain: new model version [skip ci]" || echo "No changes to commit"
+          git push
+
+      - name: Deploy updated model to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME }}
+          HF_SPACE: ${{ secrets.HF_SPACE }}
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+          # Clone your Hugging Face Space (if not already exists)
+          rm -rf hf_space
+          git clone https://huggingface:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE hf_space
+          cd hf_space
+
+          # Pull the latest version so we don't remove existing files
+          git pull origin main --rebase
+
+          # Copy only what you want to update (this overwrites existing file if it exists)
+          mkdir -p models
+          cp ../models/model.pkl ./models/model.pkl
+
+          # Add & commit only the changed files
+          git add models/model.pkl
+          git commit -m "Auto-update model file" || echo "No model changes to commit"
+
+          # Push back to Hugging Face (non-destructive update)
+          git push origin main

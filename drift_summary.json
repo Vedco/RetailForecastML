@@ -1,0 +1,6 @@
+{
+  "data_drift_detected": true,
+  "concept_drift_detected": false,
+  "current_mape": Infinity,
+  "baseline_mape": 12.637088788356607
+}

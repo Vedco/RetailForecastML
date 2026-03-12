@@ -123,7 +123,8 @@ Key advantages include:
 
 The remote storage backend is integrated with **DagsHub**.
 
-![DagsHub Integration](assets/dagshub_repo.png)
+<img width="1897" height="736" alt="image" src="https://github.com/user-attachments/assets/fdd03e86-9b26-434a-a0e2-680fa3a8b1d7" />
+
 
 ### Retraining Workflow
 
@@ -190,7 +191,8 @@ The project is deployed on **Hugging Face Spaces**, allowing public access to th
 
 To ensure reliable production operation, the system integrates a monitoring stack.
 
-![Grafana Dashboard](assets/grafana_dashboard.png)
+<img width="1919" height="905" alt="image" src="https://github.com/user-attachments/assets/3c30b1e3-9f5f-498a-86e1-639d6a95911f" />
+
 
 ### Monitoring Components
 
